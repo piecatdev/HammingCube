@@ -1,0 +1,6 @@
+/hammingcube
+/parity3d
+/test_parity3d
+*.dSYM/
+*.swp
+.DS_Store
