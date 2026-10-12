@@ -223,6 +223,15 @@ might report that certain symbols could not be read. We still do not know
 their original values, but we know exactly which cells are unknown. This
 extra information changes the decoding problem.
 
+The diagram uses the seven positions from the `erase` example above. Each
+panel is a fixed $z$-slice of the transmitted $5\times5\times5$ cube; $x$
+increases to the right and $y$ downward. The red labels are **linear bit
+indices**, not bit values. In the highlighted row, index 42 is the only
+erasure, so its four known neighbors determine it by even parity. Other
+patterns may require several line equations together.
+
+<p align="center"><img src="docs/images/erasure-recovery-3d.svg" width="900" alt="Five 5-by-5 slices of the 125-bit codeword with seven erased positions marked in red; a highlighted parity line recovers erased bit 42 from four known bits"></p>
+
 ### Why seven erasures are always recoverable
 
 Suppose at most seven positions are erased. If two valid codewords matched

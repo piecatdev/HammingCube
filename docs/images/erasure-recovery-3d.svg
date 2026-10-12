@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="495" viewBox="0 0 1140 495" role="img" aria-labelledby="title desc">
+<title id="title">Seven erasures in a three-dimensional parity code</title>
+<desc id="desc">Five 5 by 5 slices show all 125 transmitted cells. Seven red cells labeled by linear index are erased. A blue row in the z equals 1 slice shows how cell 42 is recovered as the XOR of four known cells.</desc>
+<rect width="1140" height="495" rx="20" fill="#f8fafc"/>
+<rect x="1" y="1" width="1138" height="493" rx="19" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+<text x="40" y="51" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#0f172a">Seven known locations, seven missing values</text>
+<text x="40" y="80" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#475569">The 125-bit codeword is shown as five 5 × 5 slices. Each red number is an erased bit index.</text>
+<rect x="36" y="111" width="194" height="245" rx="14" fill="#ffffff" stroke="#dbe4ee" stroke-width="2"/>
+<text x="133" y="143" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#0f172a">z = 0</text>
+<line x1="73" y1="177" x2="193" y2="177" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="73" y1="207" x2="193" y2="207" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="73" y1="237" x2="193" y2="237" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="73" y1="267" x2="193" y2="267" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="73" y1="297" x2="193" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="73" y1="177" x2="73" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="103" y1="177" x2="103" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="133" y1="177" x2="133" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="163" y1="177" x2="163" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="193" y1="177" x2="193" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<circle cx="73" cy="177" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="73" y="181" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">0</text>
+<circle cx="103" cy="177" r="8" fill="#334155"/>
+<circle cx="133" cy="177" r="8" fill="#334155"/>
+<circle cx="163" cy="177" r="8" fill="#334155"/>
+<circle cx="193" cy="177" r="8" fill="#334155"/>
+<circle cx="73" cy="207" r="8" fill="#334155"/>
+<circle cx="103" cy="207" r="8" fill="#334155"/>
+<circle cx="133" cy="207" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="133" y="211" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">7</text>
+<circle cx="163" cy="207" r="8" fill="#334155"/>
+<circle cx="193" cy="207" r="8" fill="#334155"/>
+<circle cx="73" cy="237" r="8" fill="#334155"/>
+<circle cx="103" cy="237" r="8" fill="#334155"/>
+<circle cx="133" cy="237" r="8" fill="#334155"/>
+<circle cx="163" cy="237" r="8" fill="#334155"/>
+<circle cx="193" cy="237" r="8" fill="#334155"/>
+<circle cx="73" cy="267" r="8" fill="#334155"/>
+<circle cx="103" cy="267" r="8" fill="#334155"/>
+<circle cx="133" cy="267" r="8" fill="#334155"/>
+<circle cx="163" cy="267" r="8" fill="#334155"/>
+<circle cx="193" cy="267" r="8" fill="#334155"/>
+<circle cx="73" cy="297" r="8" fill="#334155"/>
+<circle cx="103" cy="297" r="8" fill="#334155"/>
+<circle cx="133" cy="297" r="8" fill="#334155"/>
+<circle cx="163" cy="297" r="8" fill="#334155"/>
+<circle cx="193" cy="297" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="193" y="301" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">24</text>
+<text x="133" y="334" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">x →   ·   y ↓</text>
+<rect x="256" y="111" width="194" height="245" rx="14" fill="#ffffff" stroke="#dbe4ee" stroke-width="2"/>
+<text x="353" y="143" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#0f172a">z = 1</text>
+<line x1="293" y1="177" x2="413" y2="177" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="293" y1="207" x2="413" y2="207" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="293" y1="237" x2="413" y2="237" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="293" y1="267" x2="413" y2="267" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="293" y1="297" x2="413" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="293" y1="177" x2="293" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="323" y1="177" x2="323" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="353" y1="177" x2="353" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="383" y1="177" x2="383" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="413" y1="177" x2="413" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<rect x="293" y="263" width="120" height="8" rx="4" fill="#0284c7"/>
+<circle cx="293" cy="177" r="8" fill="#334155"/>
+<circle cx="323" cy="177" r="8" fill="#334155"/>
+<circle cx="353" cy="177" r="8" fill="#334155"/>
+<circle cx="383" cy="177" r="8" fill="#334155"/>
+<circle cx="413" cy="177" r="8" fill="#334155"/>
+<circle cx="293" cy="207" r="8" fill="#334155"/>
+<circle cx="323" cy="207" r="8" fill="#334155"/>
+<circle cx="353" cy="207" r="8" fill="#334155"/>
+<circle cx="383" cy="207" r="8" fill="#334155"/>
+<circle cx="413" cy="207" r="8" fill="#334155"/>
+<circle cx="293" cy="237" r="8" fill="#334155"/>
+<circle cx="323" cy="237" r="8" fill="#334155"/>
+<circle cx="353" cy="237" r="8" fill="#334155"/>
+<circle cx="383" cy="237" r="8" fill="#334155"/>
+<circle cx="413" cy="237" r="8" fill="#334155"/>
+<circle cx="293" cy="267" r="8" fill="#334155"/>
+<circle cx="323" cy="267" r="8" fill="#334155"/>
+<circle cx="353" cy="267" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="353" y="271" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">42</text>
+<circle cx="383" cy="267" r="8" fill="#334155"/>
+<circle cx="413" cy="267" r="8" fill="#334155"/>
+<circle cx="293" cy="297" r="8" fill="#334155"/>
+<circle cx="323" cy="297" r="8" fill="#334155"/>
+<circle cx="353" cy="297" r="8" fill="#334155"/>
+<circle cx="383" cy="297" r="8" fill="#334155"/>
+<circle cx="413" cy="297" r="8" fill="#334155"/>
+<text x="353" y="334" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">x →   ·   y ↓</text>
+<rect x="476" y="111" width="194" height="245" rx="14" fill="#ffffff" stroke="#dbe4ee" stroke-width="2"/>
+<text x="573" y="143" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#0f172a">z = 2</text>
+<line x1="513" y1="177" x2="633" y2="177" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="513" y1="207" x2="633" y2="207" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="513" y1="237" x2="633" y2="237" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="513" y1="267" x2="633" y2="267" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="513" y1="297" x2="633" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="513" y1="177" x2="513" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="543" y1="177" x2="543" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="573" y1="177" x2="573" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="603" y1="177" x2="603" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="633" y1="177" x2="633" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<circle cx="513" cy="177" r="8" fill="#334155"/>
+<circle cx="543" cy="177" r="8" fill="#334155"/>
+<circle cx="573" cy="177" r="8" fill="#334155"/>
+<circle cx="603" cy="177" r="8" fill="#334155"/>
+<circle cx="633" cy="177" r="8" fill="#334155"/>
+<circle cx="513" cy="207" r="8" fill="#334155"/>
+<circle cx="543" cy="207" r="8" fill="#334155"/>
+<circle cx="573" cy="207" r="8" fill="#334155"/>
+<circle cx="603" cy="207" r="8" fill="#334155"/>
+<circle cx="633" cy="207" r="8" fill="#334155"/>
+<circle cx="513" cy="237" r="8" fill="#334155"/>
+<circle cx="543" cy="237" r="8" fill="#334155"/>
+<circle cx="573" cy="237" r="8" fill="#334155"/>
+<circle cx="603" cy="237" r="8" fill="#334155"/>
+<circle cx="633" cy="237" r="8" fill="#334155"/>
+<circle cx="513" cy="267" r="8" fill="#334155"/>
+<circle cx="543" cy="267" r="8" fill="#334155"/>
+<circle cx="573" cy="267" r="8" fill="#334155"/>
+<circle cx="603" cy="267" r="8" fill="#334155"/>
+<circle cx="633" cy="267" r="8" fill="#334155"/>
+<circle cx="513" cy="297" r="8" fill="#334155"/>
+<circle cx="543" cy="297" r="8" fill="#334155"/>
+<circle cx="573" cy="297" r="8" fill="#334155"/>
+<circle cx="603" cy="297" r="8" fill="#334155"/>
+<circle cx="633" cy="297" r="8" fill="#334155"/>
+<text x="573" y="334" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">x →   ·   y ↓</text>
+<rect x="696" y="111" width="194" height="245" rx="14" fill="#ffffff" stroke="#dbe4ee" stroke-width="2"/>
+<text x="793" y="143" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#0f172a">z = 3</text>
+<line x1="733" y1="177" x2="853" y2="177" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="733" y1="207" x2="853" y2="207" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="733" y1="237" x2="853" y2="237" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="733" y1="267" x2="853" y2="267" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="733" y1="297" x2="853" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="733" y1="177" x2="733" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="763" y1="177" x2="763" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="793" y1="177" x2="793" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="823" y1="177" x2="823" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="853" y1="177" x2="853" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<circle cx="733" cy="177" r="8" fill="#334155"/>
+<circle cx="763" cy="177" r="8" fill="#334155"/>
+<circle cx="793" cy="177" r="8" fill="#334155"/>
+<circle cx="823" cy="177" r="8" fill="#334155"/>
+<circle cx="853" cy="177" r="8" fill="#334155"/>
+<circle cx="733" cy="207" r="8" fill="#334155"/>
+<circle cx="763" cy="207" r="8" fill="#334155"/>
+<circle cx="793" cy="207" r="8" fill="#334155"/>
+<circle cx="823" cy="207" r="8" fill="#334155"/>
+<circle cx="853" cy="207" r="8" fill="#334155"/>
+<circle cx="733" cy="237" r="8" fill="#334155"/>
+<circle cx="763" cy="237" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="763" y="241" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">86</text>
+<circle cx="793" cy="237" r="8" fill="#334155"/>
+<circle cx="823" cy="237" r="8" fill="#334155"/>
+<circle cx="853" cy="237" r="8" fill="#334155"/>
+<circle cx="733" cy="267" r="8" fill="#334155"/>
+<circle cx="763" cy="267" r="8" fill="#334155"/>
+<circle cx="793" cy="267" r="8" fill="#334155"/>
+<circle cx="823" cy="267" r="8" fill="#334155"/>
+<circle cx="853" cy="267" r="8" fill="#334155"/>
+<circle cx="733" cy="297" r="8" fill="#334155"/>
+<circle cx="763" cy="297" r="8" fill="#334155"/>
+<circle cx="793" cy="297" r="8" fill="#334155"/>
+<circle cx="823" cy="297" r="8" fill="#334155"/>
+<circle cx="853" cy="297" r="8" fill="#334155"/>
+<text x="793" y="334" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">x →   ·   y ↓</text>
+<rect x="916" y="111" width="194" height="245" rx="14" fill="#ffffff" stroke="#dbe4ee" stroke-width="2"/>
+<text x="1013" y="143" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#0f172a">z = 4</text>
+<line x1="953" y1="177" x2="1073" y2="177" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="953" y1="207" x2="1073" y2="207" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="953" y1="237" x2="1073" y2="237" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="953" y1="267" x2="1073" y2="267" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="953" y1="297" x2="1073" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="953" y1="177" x2="953" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="983" y1="177" x2="983" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="1013" y1="177" x2="1013" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="1043" y1="177" x2="1043" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<line x1="1073" y1="177" x2="1073" y2="297" stroke="#cbd5e1" stroke-width="2"/>
+<circle cx="953" cy="177" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="953" y="181" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">100</text>
+<circle cx="983" cy="177" r="8" fill="#334155"/>
+<circle cx="1013" cy="177" r="8" fill="#334155"/>
+<circle cx="1043" cy="177" r="8" fill="#334155"/>
+<circle cx="1073" cy="177" r="8" fill="#334155"/>
+<circle cx="953" cy="207" r="8" fill="#334155"/>
+<circle cx="983" cy="207" r="8" fill="#334155"/>
+<circle cx="1013" cy="207" r="8" fill="#334155"/>
+<circle cx="1043" cy="207" r="8" fill="#334155"/>
+<circle cx="1073" cy="207" r="8" fill="#334155"/>
+<circle cx="953" cy="237" r="8" fill="#334155"/>
+<circle cx="983" cy="237" r="8" fill="#334155"/>
+<circle cx="1013" cy="237" r="8" fill="#334155"/>
+<circle cx="1043" cy="237" r="8" fill="#334155"/>
+<circle cx="1073" cy="237" r="8" fill="#334155"/>
+<circle cx="953" cy="267" r="8" fill="#334155"/>
+<circle cx="983" cy="267" r="8" fill="#334155"/>
+<circle cx="1013" cy="267" r="8" fill="#334155"/>
+<circle cx="1043" cy="267" r="8" fill="#334155"/>
+<circle cx="1073" cy="267" r="8" fill="#334155"/>
+<circle cx="953" cy="297" r="8" fill="#334155"/>
+<circle cx="983" cy="297" r="14" fill="#b91c1c" stroke="#ffffff" stroke-width="2"/>
+<text x="983" y="301" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#ffffff">121</text>
+<circle cx="1013" cy="297" r="8" fill="#334155"/>
+<circle cx="1043" cy="297" r="8" fill="#334155"/>
+<circle cx="1073" cy="297" r="8" fill="#334155"/>
+<text x="1013" y="334" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748b">x →   ·   y ↓</text>
+<circle cx="53" cy="386" r="8" fill="#334155"/>
+<text x="70" y="391" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#334155">known bit (0 or 1)</text>
+<circle cx="292" cy="386" r="14" fill="#b91c1c"/>
+<text x="292" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" fill="white">42</text>
+<text x="315" y="391" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#334155">erased index (stored value ignored)</text>
+<rect x="680" y="382" width="46" height="8" rx="4" fill="#0284c7"/>
+<text x="739" y="391" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#334155">one parity-check line</text>
+<rect x="37" y="414" width="1066" height="58" rx="12" fill="#e0f2fe"/>
+<text x="57" y="439" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#075985">Example: only cell 42 is missing from the highlighted line.</text>
+<text x="57" y="461" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#0c4a6e">c(2,3,1) = c(0,3,1) XOR c(1,3,1) XOR c(3,3,1) XOR c(4,3,1)</text>
+</svg>
