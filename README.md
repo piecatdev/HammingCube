@@ -109,7 +109,7 @@ bit, so a shortest path between two vertices has length equal to their
 Hamming distance. The red path illustrates $d_H(100,011)=3$; the blue path
 illustrates $d_H(010,111)=2$.
 
-![Hamming distances between three-bit binary strings, with red and blue paths](docs/images/hamming-distance-3bit.webp)
+<p align="center"><img src="docs/images/hamming-distance-3bit-card.png" width="460" alt="Three-bit Hamming cube: red path of length three and blue path of length two"></p>
 
 This is an illustration of distance between **short binary strings**. For
 the code implemented here, $n=125$ and distance counts differing cells in
@@ -194,10 +194,11 @@ decoder matched to its error model.
 ## 4. Bit layout and C API
 
 Inside the encoder and decoder, each `uint8_t` array element stores **one
-bit**, either 0 or 1. This makes the math easy to inspect. Linear indices are
+bit**, either 0 or 1. This makes the math easy to inspect. The linear data
+index $i_d$ and transmitted-codeword index $i_c$ are
 
-$$\operatorname{dataIndex}(x,y,z)=x+4y+16z,$$
-$$\operatorname{codeIndex}(x,y,z)=x+5y+25z.$$
+$$i_d(x,y,z)=x+4y+16z,$$
+$$i_c(x,y,z)=x+5y+25z.$$
 
 Thus `./hammingcube demo HEX64 100` flips $c_{0,0,4}$, a parity-face bit. The
 hexadecimal input's least significant bit becomes data index 0.
@@ -254,7 +255,7 @@ strings: a projection of a 16-vertex **tesseract**. As in the three-bit cube,
 each edge joins words differing in one bit. The colored paths are examples
 of distances between those four-bit labels.
 
-![Hamming distances between four-bit binary strings in a tesseract projection](docs/images/hamming-distance-4bit.svg)
+<p align="center"><img src="docs/images/hamming-distance-4bit-card.svg" width="600" alt="Four-bit Hamming-distance graph projected as a tesseract"></p>
 
 The parity construction can also be applied along a fourth axis. One changed
 data bit would then affect
@@ -276,4 +277,4 @@ not a claim about the current C API.
 
 ## Figure credits
 
-The two figures are the files supplied for this project: [three-bit cube](https://commons.wikimedia.org/wiki/File:Hamming_distance_3_bit_binary_example.svg) (WebP rendering) and [four-bit tesseract](https://commons.wikimedia.org/wiki/File:Hamming_distance_4_bit_binary_example.svg) (original SVG), both by **Cburnett**. They are reproduced without visual changes under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+The figures are based on the supplied [three-bit cube](https://commons.wikimedia.org/wiki/File:Hamming_distance_3_bit_binary_example.svg) and [four-bit tesseract](https://commons.wikimedia.org/wiki/File:Hamming_distance_4_bit_binary_example.svg), both by **Cburnett** under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The original files are preserved in `docs/images/`. The README versions add a white background for dark-mode contrast; the three-bit version is also resized and padded.
