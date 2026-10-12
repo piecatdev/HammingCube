@@ -9,6 +9,12 @@
 #define P3_CODE_BITS 125u
 #define P3_WIRE_BYTES 16u
 
+/* Buffer contract for the entire API: array parameters decay to pointers in
+ * C. Callers must provide readable/writable storage for the sizes named in
+ * each declaration; no function can detect a too-short buffer. Passing one
+ * is undefined behavior, not a P3_INVALID result. Input and output buffers
+ * must be separate. Non-NULL bit arrays must contain only 0 or 1. */
+
 typedef enum {
     P3_INVALID = -1,
     P3_UNCORRECTABLE = 0,
@@ -37,9 +43,14 @@ int p3_unpack(const uint8_t wire[P3_WIRE_BYTES],
 /* Returns 1 for a valid codeword, 0 for invalid parity, -1 for invalid bits. */
 int p3_is_codeword(const uint8_t codeword[P3_CODE_BITS]);
 
-/* Corrects every pattern of at most three flipped bits. On CLEAN/CORRECTED,
- * writes the recovered data and repaired codeword. Other outputs are untouched.
- * Beyond three flips, decoding has no guarantee of detection or correctness. */
+/* Corrects every pattern of at most three flipped bits.
+ * CLEAN: zero syndrome; no correction attempted (not proof of no errors).
+ * CORRECTED: one to three positions in result.positions were flipped.
+ * UNCORRECTABLE: no codeword within distance three was found.
+ * INVALID: NULL pointer or received bit outside {0,1}. This cannot detect
+ * a too-short buffer; see the buffer contract above.
+ * data_out and repaired change only on CLEAN/CORRECTED. Beyond three flips,
+ * decoding has no guarantee of detection or correctness. */
 p3_result p3_decode(const uint8_t received[P3_CODE_BITS],
                     uint8_t data_out[P3_DATA_BITS],
                     uint8_t repaired[P3_CODE_BITS]);
@@ -49,7 +60,9 @@ p3_result p3_decode(const uint8_t received[P3_CODE_BITS],
  * has a unique solution. Larger sets are accepted when uniquely solvable.
  * Returns CLEAN for zero erasures and valid parity, CORRECTED for a unique
  * solution, UNCORRECTABLE for inconsistent or ambiguous equations, and
- * INVALID for malformed arguments. Outputs change only on success. */
+ * INVALID for NULL pointers, duplicate/out-of-range positions, count > 125,
+ * or received bits outside {0,1}; it cannot detect a too-short buffer.
+ * Outputs change only on CLEAN/CORRECTED. */
 p3_status p3_decode_erasures(const uint8_t received[P3_CODE_BITS],
                              const unsigned *positions, unsigned count,
                              uint8_t data_out[P3_DATA_BITS],

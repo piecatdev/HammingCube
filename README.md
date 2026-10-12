@@ -188,6 +188,16 @@ $1+5(2)+25(3)=86$, only $s_x(2,3)$, $s_y(1,3)$, and $s_z(1,2)$ become 1.
 Their intersection identifies the bad cell. With multiple flips, line
 failures can cancel, so the receiver compares full syndrome signatures.
 
+For example, put two flips at $(1,1,z)$ and $(2,1,z)$ in the same $z$-slice.
+The $x$-axis check through that row sees two error bits and therefore reports
+$0\oplus1\oplus1\oplus0\oplus0=0$: that one check looks valid. The two
+perpendicular $y$-axis checks each see one error and report 1; their
+$z$-axis checks also report 1. The diagram shows the **error mask** rather
+than the data bits, because the original valid codeword contributes zero to
+each check.
+
+<p align="center"><img src="docs/images/two-flips-one-slice.svg" width="850" alt="Two flipped bits in one row cancel in its horizontal parity check, while their two vertical parity checks fail"></p>
+
 Because XOR is linear, the syndrome of an error set $E$ is the XOR of its
 individual bit signatures:
 
@@ -313,9 +323,12 @@ device that wants to interoperate with the project.
 | `p3_hamming_distance` | Count differing bit positions. |
 
 `p3_decode` returns `P3_CLEAN`, `P3_CORRECTED`, `P3_UNCORRECTABLE`, or
-`P3_INVALID`. It writes the recovered data and repaired codeword only on the
-first two outcomes. Calls require separate input and output arrays and values
-restricted to 0 or 1.
+`P3_INVALID`. `P3_CLEAN` means the syndrome is zero; it does not prove that
+no bits changed. `P3_CORRECTED` means the decoder flipped the one to three
+positions listed in its `p3_result`. `P3_UNCORRECTABLE` means it found no
+codeword within distance three. `P3_INVALID` covers a null pointer or a
+received array element outside $\{0,1\}$. It writes the recovered data and
+repaired codeword only on `P3_CLEAN` or `P3_CORRECTED`.
 
 `p3_decode_erasures(received, positions, count, data_out, repaired)` returns
 `P3_CLEAN` when `count` is zero and parity is valid, `P3_CORRECTED` when it
@@ -323,6 +336,16 @@ uniquely fills one or more erasures, `P3_UNCORRECTABLE` for ambiguous or
 inconsistent equations, and `P3_INVALID` for malformed inputs. Its output
 arrays are written only on success. The `received` array must contain 0 or 1
 at every position, including erased ones; erased values are ignored.
+
+**Buffer lengths are a caller obligation in the C API.** In a function
+parameter, `received[P3_CODE_BITS]` is adjusted by C to a pointer; the
+function cannot inspect the allocation size. The caller must supply at least
+125 elements for each codeword array, 64 for each data array, 16 for each
+wire array, and `count` entries in `positions`. Input and output arrays must
+be separate. Passing a shorter buffer can read or write out of bounds: it is
+**undefined behavior**, not a `P3_INVALID` return. The CLI can check input
+length because it receives hexadecimal strings and requires exactly 16
+digits for `HEX64` or 32 for `FRAMEHEX`.
 
 ## 6. Reproduce the checks
 
@@ -335,7 +358,12 @@ The mathematical argument above supplies the general three-bit guarantee;
 the tests exercise its implementation. The erasure tests cover all one- and
 two-position sets, many sets of sizes three through seven, a deliberately
 ambiguous eight-position set, a uniquely solvable eight-position set,
-inconsistent known bits, and invalid indices.
+inconsistent known bits, and invalid indices. They also permute the erased
+position list for seven- and eight-position boundary cases. In particular,
+replacing one cell in a minimum-weight ambiguous eight-cell support yields a
+uniquely recoverable eight-cell set; restoring that cell makes the equations
+ambiguous. The result is independent of the order in which those positions
+are supplied.
 Compile flags include `-std=c11
 -Wall -Wextra -Wpedantic -Werror`.
 
@@ -379,4 +407,4 @@ not a claim about the current C API.
 
 ## Figure credits
 
-The figures are based on the supplied [three-bit cube](https://commons.wikimedia.org/wiki/File:Hamming_distance_3_bit_binary_example.svg) and [four-bit tesseract](https://commons.wikimedia.org/wiki/File:Hamming_distance_4_bit_binary_example.svg), both by **Cburnett** under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The original files are preserved in `docs/images/`. The README versions add a white background for dark-mode contrast; the three-bit version is also resized and padded.
+The Hamming cube and tesseract figures are based on the supplied [three-bit cube](https://commons.wikimedia.org/wiki/File:Hamming_distance_3_bit_binary_example.svg) and [four-bit tesseract](https://commons.wikimedia.org/wiki/File:Hamming_distance_4_bit_binary_example.svg), both by **Cburnett** under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The original files are preserved in `docs/images/`. The README versions add a white background for dark-mode contrast; the three-bit version is also resized and padded. The erasure-slice and two-flip diagrams were drawn for this project.

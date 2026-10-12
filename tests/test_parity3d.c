@@ -31,6 +31,32 @@ static void check_erasures(const uint8_t sent[P3_CODE_BITS],
     assert(memcmp(repaired, sent, P3_CODE_BITS) == 0);
 }
 
+static void check_reordered_erasures(const uint8_t sent[P3_CODE_BITS],
+                                     const uint8_t expected[P3_DATA_BITS],
+                                     const unsigned *positions, unsigned count) {
+    unsigned reordered[P3_CODE_BITS];
+    for (unsigned i = 0; i < count; ++i)
+        reordered[i] = positions[count - 1u - i];
+    check_erasures(sent, expected, reordered, count);
+    if (count > 1u) {
+        unsigned first = reordered[0];
+        for (unsigned i = 1; i < count; ++i) reordered[i - 1u] = reordered[i];
+        reordered[count - 1u] = first;
+        check_erasures(sent, expected, reordered, count);
+    }
+}
+
+static void check_ambiguous_erasures(const uint8_t sent[P3_CODE_BITS],
+                                     const unsigned *positions, unsigned count) {
+    uint8_t output[P3_DATA_BITS], repaired[P3_CODE_BITS];
+    memset(output, 0xa5, sizeof output);
+    memset(repaired, 0xa5, sizeof repaired);
+    assert(p3_decode_erasures(sent, positions, count, output, repaired) ==
+           P3_UNCORRECTABLE);
+    for (unsigned i = 0; i < P3_DATA_BITS; ++i) assert(output[i] == 0xa5);
+    for (unsigned i = 0; i < P3_CODE_BITS; ++i) assert(repaired[i] == 0xa5);
+}
+
 int main(void) {
     uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS];
     for (unsigned i = 0; i < P3_DATA_BITS; ++i)
@@ -107,27 +133,42 @@ int main(void) {
             if (i != omitted) seven[used++] = support[i];
         check_erasures(a, zero, seven, 7);
         check_erasures(b, one, seven, 7);
+        check_reordered_erasures(a, zero, seven, 7);
+        check_reordered_erasures(b, one, seven, 7);
     }
     /* The radius-seven guarantee is conservative: some eight-cell sets
        also have full column rank and are uniquely recoverable. */
     unsigned unique_eight[] = {0, 1, 2, 3, 4, 5, 6, 7};
     check_erasures(a, zero, unique_eight, 8);
     check_erasures(b, one, unique_eight, 8);
+    /* Seven corners of the minimum-weight support plus one nearby cell:
+       changing that one position makes this eight-erasure set full rank. */
+    unsigned near_boundary[8];
+    for (unsigned i = 0; i < 7u; ++i) near_boundary[i] = support[i + 1u];
+    near_boundary[7] = 1;
+    check_erasures(a, zero, near_boundary, 8);
+    check_erasures(b, one, near_boundary, 8);
+    check_reordered_erasures(a, zero, near_boundary, 8);
+    check_reordered_erasures(b, one, near_boundary, 8);
     /* Erasing the support of a weight-eight codeword leaves at least two
        possible completions. The decoder must not guess. */
+    check_ambiguous_erasures(a, support, 8);
+    check_ambiguous_erasures(b, support, 8);
+    unsigned reversed_support[8];
+    for (unsigned i = 0; i < 8u; ++i) reversed_support[i] = support[7u - i];
+    check_ambiguous_erasures(a, reversed_support, 8);
+    check_ambiguous_erasures(b, reversed_support, 8);
     uint8_t erased_received[P3_CODE_BITS], untouched[P3_CODE_BITS];
     memcpy(erased_received, a, P3_CODE_BITS);
     memset(untouched, 0xa5, P3_CODE_BITS);
     uint8_t erasure_output[P3_DATA_BITS];
     memset(erasure_output, 0xa5, P3_DATA_BITS);
-    assert(p3_decode_erasures(erased_received, support, 8,
-                              erasure_output, untouched) == P3_UNCORRECTABLE);
-    for (unsigned i = 0; i < P3_CODE_BITS; ++i) assert(untouched[i] == 0xa5);
-    for (unsigned i = 0; i < P3_DATA_BITS; ++i) assert(erasure_output[i] == 0xa5);
 
     /* A known wrong bit makes these parity equations inconsistent. */
     erased_received[1] ^= 1u;
     assert(p3_decode_erasures(erased_received, support, 1,
+                              erasure_output, untouched) == P3_UNCORRECTABLE);
+    assert(p3_decode_erasures(erased_received, NULL, 0,
                               erasure_output, untouched) == P3_UNCORRECTABLE);
     unsigned duplicate[] = {0, 0}, out_of_range[] = {P3_CODE_BITS};
     assert(p3_decode_erasures(a, duplicate, 2, erasure_output, untouched) == P3_INVALID);
@@ -137,7 +178,11 @@ int main(void) {
     uint8_t received[P3_CODE_BITS], repaired[P3_CODE_BITS], output[P3_DATA_BITS];
     memcpy(received, a, sizeof received);
     for (unsigned i = 0; i < 4u; ++i) received[support[i]] ^= 1u;
+    memset(output, 0xa5, sizeof output);
+    memset(repaired, 0xa5, sizeof repaired);
     assert(p3_decode(received, output, repaired).status == P3_UNCORRECTABLE);
+    for (unsigned i = 0; i < P3_DATA_BITS; ++i) assert(output[i] == 0xa5);
+    for (unsigned i = 0; i < P3_CODE_BITS; ++i) assert(repaired[i] == 0xa5);
     received[support[4]] ^= 1u;
     assert(p3_decode(received, output, repaired).status == P3_CORRECTED);
     assert(memcmp(repaired, b, P3_CODE_BITS) == 0);
@@ -151,6 +196,9 @@ int main(void) {
     b[0] = 2;
     assert(p3_is_codeword(b) == -1);
     assert(p3_decode(b, data, a).status == P3_INVALID);
+    assert(p3_decode(NULL, data, a).status == P3_INVALID);
+    assert(p3_decode(sent, NULL, a).status == P3_INVALID);
+    assert(p3_decode(sent, data, NULL).status == P3_INVALID);
     puts("All parity3d tests passed.");
     return 0;
 }
