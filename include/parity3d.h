@@ -44,6 +44,17 @@ p3_result p3_decode(const uint8_t received[P3_CODE_BITS],
                     uint8_t data_out[P3_DATA_BITS],
                     uint8_t repaired[P3_CODE_BITS]);
 
+/* Reconstruct bits at the listed erased positions. Their received values are
+ * ignored; all other bits must be correct. Every set of at most seven erasures
+ * has a unique solution. Larger sets are accepted when uniquely solvable.
+ * Returns CLEAN for zero erasures and valid parity, CORRECTED for a unique
+ * solution, UNCORRECTABLE for inconsistent or ambiguous equations, and
+ * INVALID for malformed arguments. Outputs change only on success. */
+p3_status p3_decode_erasures(const uint8_t received[P3_CODE_BITS],
+                             const unsigned *positions, unsigned count,
+                             uint8_t data_out[P3_DATA_BITS],
+                             uint8_t repaired[P3_CODE_BITS]);
+
 /* Returns the bitwise Hamming distance, or -1 for invalid input bits. */
 int p3_hamming_distance(const uint8_t a[P3_CODE_BITS],
                         const uint8_t b[P3_CODE_BITS]);

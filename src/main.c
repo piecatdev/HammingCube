@@ -10,6 +10,8 @@ static void usage(const char *program) {
     fprintf(stderr, "  %s encode HEX64\n", program);
     fprintf(stderr, "  %s decode FRAMEHEX\n", program);
     fprintf(stderr, "  %s demo HEX64 [FLIP_INDEX ...]\n", program);
+    fprintf(stderr, "  %s erase HEX64 [ERASED_INDEX ...]\n", program);
+    fprintf(stderr, "  %s recover FRAMEHEX [ERASED_INDEX ...]\n", program);
     fprintf(stderr, "HEX64 has 16 digits; FRAMEHEX has 32; bit indices are 0..124.\n");
 }
 
@@ -83,6 +85,79 @@ static int show_decoded(const uint8_t received[P3_CODE_BITS]) {
     return 0;
 }
 
+static int parse_erasure_indices(int argc, char **argv, int first,
+                                 unsigned positions[P3_CODE_BITS]) {
+    if (argc - first > (int)P3_CODE_BITS) return -1;
+    uint8_t seen[P3_CODE_BITS] = {0};
+    for (int arg = first; arg < argc; ++arg) {
+        char *end = NULL;
+        errno = 0;
+        unsigned long index = strtoul(argv[arg], &end, 10);
+        if (errno || end == argv[arg] || *end != '\0' ||
+            index >= P3_CODE_BITS || seen[index]) return -1;
+        seen[index] = 1;
+        positions[arg - first] = (unsigned)index;
+    }
+    return 0;
+}
+
+static int show_erasures(const uint8_t received[P3_CODE_BITS],
+                         const unsigned *positions, unsigned count) {
+    uint8_t recovered[P3_DATA_BITS], repaired[P3_CODE_BITS];
+    p3_status status = p3_decode_erasures(received, positions, count,
+                                         recovered, repaired);
+    if (status == P3_CLEAN)
+        printf("Receiver:          valid codeword (no erasures)\n");
+    else if (status == P3_CORRECTED)
+        printf("Receiver:          recovered %u erased bit(s)\n", count);
+    else if (status == P3_UNCORRECTABLE) {
+        printf("Receiver:          erasures are ambiguous or inconsistent\n");
+        return 1;
+    } else {
+        fprintf(stderr, "Decoder input error\n");
+        return 2;
+    }
+    printf("Recovered data:    "); print_data(recovered); putchar('\n');
+    return 0;
+}
+
+static int run_erasures(int argc, char **argv, int is_demo) {
+    unsigned positions[P3_CODE_BITS];
+    if (argc < 3 || parse_erasure_indices(argc, argv, 3, positions) != 0) {
+        usage(argv[0]);
+        return 2;
+    }
+    unsigned count = (unsigned)(argc - 3);
+    uint8_t wire[P3_WIRE_BYTES], received[P3_CODE_BITS];
+    if (is_demo) {
+        uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS];
+        if (make_frame(argv[2], data, sent, wire) != 0) {
+            usage(argv[0]);
+            return 2;
+        }
+        printf("Sender data:       "); print_data(data); putchar('\n');
+        printf("Wire frame:        "); print_wire(wire); putchar('\n');
+        /* The simulated channel fills erased slots with zero; their values
+           are ignored by the erasure decoder. */
+        for (unsigned i = 0; i < count; ++i)
+            wire[positions[i] / 8u] &= (uint8_t)~(1u << (positions[i] % 8u));
+        printf("Received frame:    "); print_wire(wire); putchar('\n');
+    } else if (parse_wire(argv[2], wire) != 0) {
+        fprintf(stderr, "Invalid frame: expected 32 hex digits\n");
+        return 2;
+    }
+    if (p3_unpack(wire, received) != 0) {
+        fprintf(stderr, "Invalid padding bits in received frame\n");
+        return 2;
+    }
+    printf("Erased positions:  ");
+    if (!count) printf("none");
+    for (unsigned i = 0; i < count; ++i)
+        printf("%s%u", i ? ", " : "", positions[i]);
+    putchar('\n');
+    return show_erasures(received, positions, count);
+}
+
 static int run_demo(int argc, char **argv, int data_arg) {
     uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS], received[P3_CODE_BITS];
     uint8_t wire[P3_WIRE_BYTES], channel_wire[P3_WIRE_BYTES];
@@ -138,6 +213,8 @@ int main(int argc, char **argv) {
         return show_decoded(received);
     }
     if (strcmp(argv[1], "demo") == 0) return run_demo(argc, argv, 2);
+    if (strcmp(argv[1], "erase") == 0) return run_erasures(argc, argv, 1);
+    if (strcmp(argv[1], "recover") == 0) return run_erasures(argc, argv, 0);
     /* Keep the original positional demo form working. */
     return run_demo(argc, argv, 1);
 }

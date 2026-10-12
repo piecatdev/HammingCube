@@ -4,7 +4,8 @@
 sender turns 64 payload bits into a 125-bit cube. A channel may flip bits. The
 receiver calculates parity-check failures (a *syndrome*) and finds the nearest
 codeword within Hamming distance three. The implementation uses C11 and the
-standard library only.
+standard library only. A second decoder reconstructs known missing positions
+(*erasures*) by solving parity equations over $\mathrm{GF}(2)$.
 
 This repository is also a guided lesson: each formula below corresponds to a
 specific operation in [`src/parity3d.c`](src/parity3d.c).
@@ -21,6 +22,8 @@ make
 ./hammingcube encode 0123456789abcdef
 ./hammingcube decode cf7706b64a185c532818320200000000
 ./hammingcube demo 0123456789abcdef 7 42 100
+./hammingcube erase 0123456789abcdef 7 42 100 121 0 24 86
+./hammingcube recover 4e7706b64a185c532818320200000000 7 42 100 121 0 24 86
 make test
 ```
 
@@ -52,6 +55,27 @@ each following argument is a **linear codeword bit index** from 0 to 124 to
 flip in the simulated channel. Repeating an index flips that bit twice. The
 program exits with status 0 after successful decoding, 1 if it finds no
 codeword within distance three, and 2 for invalid input or frame padding.
+
+`erase` is a sender/channel/receiver demonstration: it replaces the listed
+bits with zero and tells the receiver **which positions were erased**. For
+example, all seven positions below are recovered:
+
+```text
+$ ./hammingcube erase 0123456789abcdef 7 42 100 121 0 24 86
+Sender data:       0123456789abcdef
+Wire frame:        cf7706b64a185c532818320200000000
+Received frame:    4e7706b64a185c532818320200000000
+Erased positions:  7, 42, 100, 121, 0, 24, 86
+Receiver:          recovered 7 erased bit(s)
+Recovered data:    0123456789abcdef
+```
+
+`recover FRAMEHEX [ERASED_INDEX ...]` is the separate-process receiver form.
+Its frame may contain **either 0 or 1** at an erased position: those values
+are ignored. The caller must supply distinct indices from 0 to 124; the code
+cannot discover erasure locations from the frame alone. Both erasure commands
+return status 1 when parity equations have no solution or multiple solutions,
+and status 2 for invalid input. The derivation follows in section 4.
 
 ## 1. From one parity bit to a 3D code
 
@@ -191,7 +215,62 @@ An application needing protection against such miscorrection should combine
 this code with an independent integrity check or use a different code and
 decoder matched to its error model.
 
-## 4. Bit layout and C API
+## 4. Recovering known missing bits: erasure decoding
+
+An **error** has an unknown location and an unreliable value. An **erasure**
+has a known location: for example, another layer of a communication system
+might report that certain symbols could not be read. We still do not know
+their original values, but we know exactly which cells are unknown. This
+extra information changes the decoding problem.
+
+### Why seven erasures are always recoverable
+
+Suppose at most seven positions are erased. If two valid codewords matched
+all the remaining, known positions, they could differ **only** in those at
+most seven erased positions. Their Hamming distance would therefore be at
+most seven, contradicting $d_{\min}=8$. A valid transmitted codeword already
+exists, so its completion is unique. In general a code of distance $d$ can
+uniquely recover any $d-1$ erasures; here that is **seven**, compared with
+three arbitrary bit flips.
+
+This does not say that every eight-erasure set fails. Some larger sets still
+have a unique completion. The eight cells with coordinates in
+$\{0,4\}^3$, however, are ambiguous: both the all-zero codeword and the
+weight-eight codeword from section 2 agree everywhere outside those cells.
+
+### Turn the parity checks into linear equations
+
+Let $H$ be the $75\times125$ parity-check matrix: one row for each five-cell
+line, and a 1 wherever that line contains a given cell. A valid codeword
+satisfies $Hc=0$ over $\mathrm{GF}(2)$, where addition is XOR. Split the
+positions into the known set $K$ and erased set $U$. The unknown erased
+values $u$ must satisfy
+
+$$H_Uu=H_Kr_K\pmod 2.$$
+
+For one line containing just one erased bit, this says that bit equals the
+XOR of the other four known bits. When several erased bits share lines, all
+75 equations must be solved together. The right-hand side $H_Kr_K$ is
+exactly the **syndrome of the received word after replacing erased cells
+with zero**. The actual 0 or 1 stored in an erased cell is irrelevant.
+
+[`p3_decode_erasures`](src/parity3d.c) builds a $75\times|U|$ coefficient
+matrix from the existing per-cell syndrome signatures. It then performs
+Gaussian elimination using XOR for row addition. There are three outcomes:
+
+1. **Inconsistent equations:** no codeword agrees with every known bit.
+2. **Consistent but deficient rank:** several assignments to erased bits are
+   possible, so the decoder refuses to guess.
+3. **Full column rank:** exactly one assignment exists. The decoder fills
+   the erased positions and extracts the original 64 data bits.
+
+The API accepts any number of distinct erased positions up to 125 and returns
+a completion only when it is unique. The guarantee for **every** pattern
+applies through seven erasures. It assumes all non-erased bits are correct;
+this function does not also search for unknown bit flips. The implementation
+uses fixed-size arrays and no dynamic allocation.
+
+## 5. Bit layout and C API
 
 Inside the encoder and decoder, each `uint8_t` array element stores **one
 bit**, either 0 or 1. This makes the math easy to inspect. The linear data
@@ -221,6 +300,7 @@ device that wants to interoperate with the project.
 | `p3_unpack` | Parse a frame and validate its padding bits. |
 | `p3_is_codeword` | Check whether all 75 parity equations hold. |
 | `p3_decode` | Receiver: recover and repair a word within distance three. |
+| `p3_decode_erasures` | Receiver: solve for known missing positions when the completion is unique. |
 | `p3_hamming_distance` | Count differing bit positions. |
 
 `p3_decode` returns `P3_CLEAN`, `P3_CORRECTED`, `P3_UNCORRECTABLE`, or
@@ -228,7 +308,14 @@ device that wants to interoperate with the project.
 first two outcomes. Calls require separate input and output arrays and values
 restricted to 0 or 1.
 
-## 5. Reproduce the checks
+`p3_decode_erasures(received, positions, count, data_out, repaired)` returns
+`P3_CLEAN` when `count` is zero and parity is valid, `P3_CORRECTED` when it
+uniquely fills one or more erasures, `P3_UNCORRECTABLE` for ambiguous or
+inconsistent equations, and `P3_INVALID` for malformed inputs. Its output
+arrays are written only on success. The `received` array must contain 0 or 1
+at every position, including erased ones; erased values are ignored.
+
+## 6. Reproduce the checks
 
 `make test` checks the wire-frame round trip and padding validation, every
 one-bit pattern, all $\binom{125}{2}=7{,}750$
@@ -236,19 +323,25 @@ two-bit patterns, representative three-bit patterns, invalid inputs, and an
 explicit pair of codewords at distance eight. It also demonstrates detection
 at four flips, miscorrection at five, and an undetected eight-flip pattern.
 The mathematical argument above supplies the general three-bit guarantee;
-the tests exercise its implementation. Compile flags include `-std=c11
+the tests exercise its implementation. The erasure tests cover all one- and
+two-position sets, many sets of sizes three through seven, a deliberately
+ambiguous eight-position set, a uniquely solvable eight-position set,
+inconsistent known bits, and invalid indices.
+Compile flags include `-std=c11
 -Wall -Wextra -Wpedantic -Werror`.
 
 ```sh
 make test
 ./hammingcube demo 0123456789abcdef 7 42 100 121
+./hammingcube erase 0000000000000000 0 4 20 24 100 104 120 124
 make clean
 ```
 
 The four-flip example should report that no codeword lies within distance
-three and exit with status 1.
+three and exit with status 1. The eight-erasure example should report
+ambiguous equations and also exit with status 1.
 
-## 6. A four-dimensional thought experiment
+## 7. A four-dimensional thought experiment
 
 The figure below is the corresponding Hamming-distance graph for four-bit
 strings: a projection of a 16-vertex **tesseract**. As in the three-bit cube,

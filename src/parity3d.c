@@ -41,6 +41,10 @@ static int same(syndrome a, syndrome b) {
     return a.lo == b.lo && a.hi == b.hi;
 }
 
+static int syndrome_bit(syndrome s, unsigned bit) {
+    return (int)((bit < 64u ? s.lo >> bit : s.hi >> (bit - 64u)) & 1u);
+}
+
 static syndrome compute_syndrome(const uint8_t bits[P3_CODE_BITS]) {
     syndrome s = {0, 0};
     for (unsigned i = 0; i < P3_CODE_BITS; ++i)
@@ -150,6 +154,75 @@ found:
     extract_data(repaired, data_out);
     if (result.errors_corrected) result.status = P3_CORRECTED;
     return result;
+}
+
+typedef struct { syndrome coefficients; uint8_t rhs; } equation;
+
+p3_status p3_decode_erasures(const uint8_t received[P3_CODE_BITS],
+                             const unsigned *positions, unsigned count,
+                             uint8_t data_out[P3_DATA_BITS],
+                             uint8_t repaired[P3_CODE_BITS]) {
+    if (!valid_bits(received, P3_CODE_BITS) || !data_out || !repaired ||
+        count > P3_CODE_BITS || (count && !positions)) return P3_INVALID;
+
+    uint8_t erased[P3_CODE_BITS] = {0};
+    for (unsigned col = 0; col < count; ++col) {
+        if (positions[col] >= P3_CODE_BITS || erased[positions[col]])
+            return P3_INVALID;
+        erased[positions[col]] = 1;
+    }
+
+    uint8_t known[P3_CODE_BITS];
+    memcpy(known, received, P3_CODE_BITS);
+    for (unsigned col = 0; col < count; ++col) known[positions[col]] = 0;
+    syndrome target = compute_syndrome(known);
+    equation rows[75] = {0};
+    for (unsigned row = 0; row < 75u; ++row)
+        rows[row].rhs = (uint8_t)syndrome_bit(target, row);
+    for (unsigned col = 0; col < count; ++col) {
+        syndrome sig = signature(positions[col]);
+        for (unsigned row = 0; row < 75u; ++row)
+            if (syndrome_bit(sig, row)) set_bit(&rows[row].coefficients, col);
+    }
+
+    /* Reduced row echelon form over GF(2): addition is XOR. The first
+       independent row for each column becomes its pivot equation. */
+    unsigned rank = 0;
+    for (unsigned col = 0; col < count && rank < 75u; ++col) {
+        unsigned pivot = rank;
+        while (pivot < 75u && !syndrome_bit(rows[pivot].coefficients, col))
+            ++pivot;
+        if (pivot == 75u) continue;
+        equation tmp = rows[rank];
+        rows[rank] = rows[pivot];
+        rows[pivot] = tmp;
+        for (unsigned row = 0; row < 75u; ++row) {
+            if (row == rank || !syndrome_bit(rows[row].coefficients, col))
+                continue;
+            rows[row].coefficients = xor_syndrome(rows[row].coefficients,
+                                                 rows[rank].coefficients);
+            rows[row].rhs ^= rows[rank].rhs;
+        }
+        ++rank;
+    }
+    for (unsigned row = rank; row < 75u; ++row)
+        if (rows[row].rhs) return P3_UNCORRECTABLE;
+    if (rank != count) return P3_UNCORRECTABLE;
+
+    /* Full column rank leaves one unknown per pivot row. Since elimination
+       ran in both directions, its RHS is that erased bit's value. */
+    uint8_t solved[P3_CODE_BITS];
+    memcpy(solved, known, P3_CODE_BITS);
+    for (unsigned row = 0; row < rank; ++row) {
+        for (unsigned col = 0; col < count; ++col)
+            if (syndrome_bit(rows[row].coefficients, col)) {
+                solved[positions[col]] = rows[row].rhs;
+                break;
+            }
+    }
+    memcpy(repaired, solved, P3_CODE_BITS);
+    extract_data(solved, data_out);
+    return count ? P3_CORRECTED : P3_CLEAN;
 }
 
 int p3_hamming_distance(const uint8_t a[P3_CODE_BITS],
