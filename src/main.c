@@ -12,6 +12,8 @@ static void usage(const char *program) {
     fprintf(stderr, "  %s demo HEX64 [FLIP_INDEX ...]\n", program);
     fprintf(stderr, "  %s erase HEX64 [ERASED_INDEX ...]\n", program);
     fprintf(stderr, "  %s recover FRAMEHEX [ERASED_INDEX ...]\n", program);
+    fprintf(stderr, "  %s mixed HEX64 [e:INDEX | f:INDEX ...]\n", program);
+    fprintf(stderr, "  %s decode-mixed FRAMEHEX [ERASED_INDEX ...]\n", program);
     fprintf(stderr, "HEX64 has 16 digits; FRAMEHEX has 32; bit indices are 0..124.\n");
 }
 
@@ -85,18 +87,25 @@ static int show_decoded(const uint8_t received[P3_CODE_BITS]) {
     return 0;
 }
 
+static int parse_index(const char *text, unsigned *index) {
+    if (*text < '0' || *text > '9') return -1;
+    char *end = NULL;
+    errno = 0;
+    unsigned long parsed = strtoul(text, &end, 10);
+    if (errno || *end != '\0' || parsed >= P3_CODE_BITS) return -1;
+    *index = (unsigned)parsed;
+    return 0;
+}
+
 static int parse_erasure_indices(int argc, char **argv, int first,
                                  unsigned positions[P3_CODE_BITS]) {
     if (argc - first > (int)P3_CODE_BITS) return -1;
     uint8_t seen[P3_CODE_BITS] = {0};
     for (int arg = first; arg < argc; ++arg) {
-        char *end = NULL;
-        errno = 0;
-        unsigned long index = strtoul(argv[arg], &end, 10);
-        if (errno || end == argv[arg] || *end != '\0' ||
-            index >= P3_CODE_BITS || seen[index]) return -1;
+        unsigned index;
+        if (parse_index(argv[arg], &index) != 0 || seen[index]) return -1;
         seen[index] = 1;
-        positions[arg - first] = (unsigned)index;
+        positions[arg - first] = index;
     }
     return 0;
 }
@@ -158,6 +167,87 @@ static int run_erasures(int argc, char **argv, int is_demo) {
     return show_erasures(received, positions, count);
 }
 
+static int show_mixed(const uint8_t received[P3_CODE_BITS],
+                      const unsigned *erasures, unsigned count) {
+    uint8_t recovered[P3_DATA_BITS], repaired[P3_CODE_BITS];
+    p3_result result = p3_decode_mixed(received, erasures, count,
+                                       recovered, repaired);
+    if (result.status == P3_CLEAN) {
+        printf("Receiver:          valid codeword (zero syndrome)\n");
+    } else if (result.status == P3_CORRECTED) {
+        printf("Receiver:          recovered %u erasure(s), corrected %u unknown flip(s)",
+               count, result.errors_corrected);
+        if (result.errors_corrected) printf(" at");
+        for (unsigned i = 0; i < result.errors_corrected; ++i)
+            printf(" %u", result.positions[i]);
+        putchar('\n');
+    } else if (result.status == P3_UNCORRECTABLE) {
+        printf("Receiver:          no unique completion within mixed decoding limit\n");
+        return 1;
+    } else {
+        fprintf(stderr, "Decoder input error\n");
+        return 2;
+    }
+    printf("Recovered data:    "); print_data(recovered); putchar('\n');
+    return 0;
+}
+
+static int run_mixed_demo(int argc, char **argv) {
+    unsigned erasures[P3_CODE_BITS], flips[P3_CODE_BITS];
+    unsigned erased_count = 0, flip_count = 0;
+    uint8_t seen[P3_CODE_BITS] = {0};
+    if (argc < 3 || argc - 3 > (int)P3_CODE_BITS) {
+        usage(argv[0]); return 2;
+    }
+    for (int arg = 3; arg < argc; ++arg) {
+        unsigned index;
+        if ((argv[arg][0] != 'e' && argv[arg][0] != 'f') ||
+            argv[arg][1] != ':' || parse_index(argv[arg] + 2, &index) != 0 ||
+            seen[index]) {
+            fprintf(stderr, "Invalid or repeated channel position: %s\n", argv[arg]);
+            return 2;
+        }
+        seen[index] = 1;
+        if (argv[arg][0] == 'e') erasures[erased_count++] = index;
+        else flips[flip_count++] = index;
+    }
+    uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS], wire[P3_WIRE_BYTES];
+    uint8_t received[P3_CODE_BITS];
+    if (make_frame(argv[2], data, sent, wire) != 0) {
+        usage(argv[0]); return 2;
+    }
+    printf("Sender data:       "); print_data(data); putchar('\n');
+    printf("Wire frame:        "); print_wire(wire); putchar('\n');
+    for (unsigned i = 0; i < erased_count; ++i)
+        wire[erasures[i] / 8u] &= (uint8_t)~(1u << (erasures[i] % 8u));
+    for (unsigned i = 0; i < flip_count; ++i)
+        wire[flips[i] / 8u] ^= (uint8_t)(1u << (flips[i] % 8u));
+    printf("Received frame:    "); print_wire(wire); putchar('\n');
+    printf("Channel erasures:  ");
+    if (!erased_count) printf("none");
+    for (unsigned i = 0; i < erased_count; ++i)
+        printf("%s%u", i ? ", " : "", erasures[i]);
+    putchar('\n');
+    printf("Channel flips:     ");
+    if (!flip_count) printf("none");
+    for (unsigned i = 0; i < flip_count; ++i)
+        printf("%s%u", i ? ", " : "", flips[i]);
+    putchar('\n');
+    if (p3_unpack(wire, received) != 0) return 2;
+    return show_mixed(received, erasures, erased_count);
+}
+
+static int run_mixed_receiver(int argc, char **argv) {
+    unsigned erasures[P3_CODE_BITS];
+    uint8_t wire[P3_WIRE_BYTES], received[P3_CODE_BITS];
+    if (argc < 3 || parse_erasure_indices(argc, argv, 3, erasures) != 0 ||
+        parse_wire(argv[2], wire) != 0 || p3_unpack(wire, received) != 0) {
+        fprintf(stderr, "Invalid frame or erasure indices\n");
+        return 2;
+    }
+    return show_mixed(received, erasures, (unsigned)(argc - 3));
+}
+
 static int run_demo(int argc, char **argv, int data_arg) {
     uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS], received[P3_CODE_BITS];
     uint8_t wire[P3_WIRE_BYTES], channel_wire[P3_WIRE_BYTES];
@@ -215,6 +305,8 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "demo") == 0) return run_demo(argc, argv, 2);
     if (strcmp(argv[1], "erase") == 0) return run_erasures(argc, argv, 1);
     if (strcmp(argv[1], "recover") == 0) return run_erasures(argc, argv, 0);
+    if (strcmp(argv[1], "mixed") == 0) return run_mixed_demo(argc, argv);
+    if (strcmp(argv[1], "decode-mixed") == 0) return run_mixed_receiver(argc, argv);
     /* Keep the original positional demo form working. */
     return run_demo(argc, argv, 1);
 }

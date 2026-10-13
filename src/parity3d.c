@@ -225,6 +225,111 @@ p3_status p3_decode_erasures(const uint8_t received[P3_CODE_BITS],
     return count ? P3_CORRECTED : P3_CLEAN;
 }
 
+static int matching_erasure_mask(syndrome target,
+                                 const syndrome patterns[128], unsigned count) {
+    for (unsigned mask = 0; mask < count; ++mask)
+        if (same(target, patterns[mask])) return (int)mask;
+    return -1;
+}
+
+p3_result p3_decode_mixed(const uint8_t received[P3_CODE_BITS],
+                          const unsigned *erasures, unsigned count,
+                          uint8_t data_out[P3_DATA_BITS],
+                          uint8_t repaired[P3_CODE_BITS]) {
+    p3_result result = {P3_INVALID, 0, {0, 0, 0}};
+    if (!valid_bits(received, P3_CODE_BITS) || !data_out || !repaired ||
+        count > P3_CODE_BITS || (count && !erasures)) return result;
+
+    uint8_t is_erased[P3_CODE_BITS] = {0};
+    for (unsigned i = 0; i < count; ++i) {
+        if (erasures[i] >= P3_CODE_BITS || is_erased[erasures[i]]) return result;
+        is_erased[erasures[i]] = 1;
+    }
+    if (!count) return p3_decode(received, data_out, repaired);
+    if (count > 7u) {
+        result.status = p3_decode_erasures(received, erasures, count,
+                                           data_out, repaired);
+        return result;
+    }
+
+    uint8_t known[P3_CODE_BITS];
+    memcpy(known, received, P3_CODE_BITS);
+    for (unsigned i = 0; i < count; ++i) known[erasures[i]] = 0;
+    syndrome base = compute_syndrome(known);
+    syndrome sig[P3_CODE_BITS], patterns[128] = {{0, 0}};
+    for (unsigned i = 0; i < P3_CODE_BITS; ++i) sig[i] = signature(i);
+    unsigned pattern_count = 1u << count;
+    for (unsigned mask = 1; mask < pattern_count; ++mask) {
+        unsigned bit = 0;
+        while (((mask >> bit) & 1u) == 0u) ++bit;
+        patterns[mask] = xor_syndrome(patterns[mask ^ (1u << bit)],
+                                      sig[erasures[bit]]);
+    }
+
+    /* H_U*u = s(known) XOR the signatures of candidate unknown flips.
+       Enumerate flips only outside U, in increasing weight. The minimum
+       distance makes the answer unique inside 2*e+s < 8. */
+    int mask = matching_erasure_mask(base, patterns, pattern_count);
+    if (mask >= 0) goto found;
+    unsigned max_errors = (7u - count) / 2u;
+    for (unsigned i = 0; i < P3_CODE_BITS && max_errors >= 1u; ++i) {
+        if (is_erased[i]) continue;
+        mask = matching_erasure_mask(xor_syndrome(base, sig[i]),
+                                     patterns, pattern_count);
+        if (mask >= 0) {
+            result.errors_corrected = 1;
+            result.positions[0] = i;
+            goto found;
+        }
+    }
+    for (unsigned i = 0; i < P3_CODE_BITS && max_errors >= 2u; ++i) {
+        if (is_erased[i]) continue;
+        for (unsigned j = i + 1u; j < P3_CODE_BITS; ++j) {
+            if (is_erased[j]) continue;
+            mask = matching_erasure_mask(xor_syndrome(
+                       xor_syndrome(base, sig[i]), sig[j]),
+                       patterns, pattern_count);
+            if (mask >= 0) {
+                result.errors_corrected = 2;
+                result.positions[0] = i;
+                result.positions[1] = j;
+                goto found;
+            }
+        }
+    }
+    for (unsigned i = 0; i < P3_CODE_BITS && max_errors >= 3u; ++i) {
+        if (is_erased[i]) continue;
+        for (unsigned j = i + 1u; j < P3_CODE_BITS; ++j) {
+            if (is_erased[j]) continue;
+            syndrome pair = xor_syndrome(xor_syndrome(base, sig[i]), sig[j]);
+            for (unsigned k = j + 1u; k < P3_CODE_BITS; ++k) {
+                if (is_erased[k]) continue;
+                mask = matching_erasure_mask(xor_syndrome(pair, sig[k]),
+                                             patterns, pattern_count);
+                if (mask >= 0) {
+                    result.errors_corrected = 3;
+                    result.positions[0] = i;
+                    result.positions[1] = j;
+                    result.positions[2] = k;
+                    goto found;
+                }
+            }
+        }
+    }
+    result.status = P3_UNCORRECTABLE;
+    return result;
+
+found:
+    memcpy(repaired, known, P3_CODE_BITS);
+    for (unsigned i = 0; i < result.errors_corrected; ++i)
+        repaired[result.positions[i]] ^= 1u;
+    for (unsigned i = 0; i < count; ++i)
+        repaired[erasures[i]] = (uint8_t)((mask >> i) & 1u);
+    extract_data(repaired, data_out);
+    result.status = P3_CORRECTED;
+    return result;
+}
+
 int p3_hamming_distance(const uint8_t a[P3_CODE_BITS],
                         const uint8_t b[P3_CODE_BITS]) {
     if (!valid_bits(a, P3_CODE_BITS) || !valid_bits(b, P3_CODE_BITS)) return -1;

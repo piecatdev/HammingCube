@@ -57,6 +57,29 @@ static void check_ambiguous_erasures(const uint8_t sent[P3_CODE_BITS],
     for (unsigned i = 0; i < P3_CODE_BITS; ++i) assert(repaired[i] == 0xa5);
 }
 
+static void check_mixed(const uint8_t sent[P3_CODE_BITS],
+                        const uint8_t expected[P3_DATA_BITS],
+                        const unsigned *erasures, unsigned erased_count,
+                        const unsigned *flips, unsigned flip_count) {
+    uint8_t received[P3_CODE_BITS], repaired[P3_CODE_BITS], output[P3_DATA_BITS];
+    memcpy(received, sent, P3_CODE_BITS);
+    for (unsigned i = 0; i < erased_count; ++i)
+        received[erasures[i]] = (uint8_t)(i & 1u);
+    for (unsigned i = 0; i < flip_count; ++i) received[flips[i]] ^= 1u;
+    p3_result result = p3_decode_mixed(received, erasures, erased_count,
+                                       output, repaired);
+    assert(result.status == (erased_count || flip_count ? P3_CORRECTED : P3_CLEAN));
+    assert(result.errors_corrected == flip_count);
+    for (unsigned i = 0; i < flip_count; ++i) {
+        int found = 0;
+        for (unsigned j = 0; j < result.errors_corrected; ++j)
+            if (result.positions[j] == flips[i]) found = 1;
+        assert(found);
+    }
+    assert(memcmp(output, expected, P3_DATA_BITS) == 0);
+    assert(memcmp(repaired, sent, P3_CODE_BITS) == 0);
+}
+
 int main(void) {
     uint8_t data[P3_DATA_BITS], sent[P3_CODE_BITS];
     for (unsigned i = 0; i < P3_DATA_BITS; ++i)
@@ -76,6 +99,7 @@ int main(void) {
     assert(p3_unpack(wire, unpacked) == -1);
     check_pattern(sent, data, NULL, 0);
     check_erasures(sent, data, NULL, 0);
+    check_mixed(sent, data, NULL, 0, NULL, 0);
 
     /* Every single-bit pattern, including every parity-plane cell. */
     for (unsigned i = 0; i < P3_CODE_BITS; ++i) {
@@ -102,6 +126,16 @@ int main(void) {
                 erasures[i] = (trial * 37u + i * 19u) % P3_CODE_BITS;
             check_erasures(sent, data, erasures, count);
         }
+    /* Cover every (s,e) pair satisfying 2e+s<8, with both data and
+       parity locations and with erased input values deliberately arbitrary. */
+    for (unsigned s = 0; s <= 7u; ++s)
+        for (unsigned e = 0; 2u * e + s < 8u; ++e)
+            for (unsigned trial = 0; trial < 20u; ++trial) {
+                unsigned locations[10];
+                for (unsigned i = 0; i < s + e; ++i)
+                    locations[i] = (trial * 37u + i * 19u) % P3_CODE_BITS;
+                check_mixed(sent, data, locations, s, locations + s, e);
+            }
 
     /* An 8-bit rectangular-corner pattern is another valid codeword:
        this witnesses d_min <= 8; the product-code proof gives >= 8. */
@@ -141,6 +175,7 @@ int main(void) {
     unsigned unique_eight[] = {0, 1, 2, 3, 4, 5, 6, 7};
     check_erasures(a, zero, unique_eight, 8);
     check_erasures(b, one, unique_eight, 8);
+    check_mixed(a, zero, unique_eight, 8, NULL, 0);
     /* Seven corners of the minimum-weight support plus one nearby cell:
        changing that one position makes this eight-erasure set full rank. */
     unsigned near_boundary[8];
@@ -154,6 +189,20 @@ int main(void) {
        possible completions. The decoder must not guess. */
     check_ambiguous_erasures(a, support, 8);
     check_ambiguous_erasures(b, support, 8);
+    uint8_t mixed_output[P3_DATA_BITS], mixed_repaired[P3_CODE_BITS];
+    memset(mixed_output, 0xa5, sizeof mixed_output);
+    memset(mixed_repaired, 0xa5, sizeof mixed_repaired);
+    assert(p3_decode_mixed(a, support, 8, mixed_output, mixed_repaired).status ==
+           P3_UNCORRECTABLE);
+    for (unsigned i = 0; i < P3_DATA_BITS; ++i) assert(mixed_output[i] == 0xa5);
+    for (unsigned i = 0; i < P3_CODE_BITS; ++i) assert(mixed_repaired[i] == 0xa5);
+    /* Two erasures and three unknown flips give 2e+s=8, exactly beyond
+       the guaranteed region; this word has no completion in our search. */
+    uint8_t beyond[P3_CODE_BITS];
+    memcpy(beyond, a, P3_CODE_BITS);
+    for (unsigned i = 2; i < 5u; ++i) beyond[support[i]] ^= 1u;
+    assert(p3_decode_mixed(beyond, support, 2,
+                           mixed_output, mixed_repaired).status == P3_UNCORRECTABLE);
     unsigned reversed_support[8];
     for (unsigned i = 0; i < 8u; ++i) reversed_support[i] = support[7u - i];
     check_ambiguous_erasures(a, reversed_support, 8);
@@ -199,6 +248,9 @@ int main(void) {
     assert(p3_decode(NULL, data, a).status == P3_INVALID);
     assert(p3_decode(sent, NULL, a).status == P3_INVALID);
     assert(p3_decode(sent, data, NULL).status == P3_INVALID);
+    assert(p3_decode_mixed(NULL, NULL, 0, data, a).status == P3_INVALID);
+    assert(p3_decode_mixed(sent, duplicate, 2, data, a).status == P3_INVALID);
+    assert(p3_decode_mixed(sent, NULL, 1, data, a).status == P3_INVALID);
     puts("All parity3d tests passed.");
     return 0;
 }

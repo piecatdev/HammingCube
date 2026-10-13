@@ -68,6 +68,22 @@ p3_status p3_decode_erasures(const uint8_t received[P3_CODE_BITS],
                              uint8_t data_out[P3_DATA_BITS],
                              uint8_t repaired[P3_CODE_BITS]);
 
+/* Correct unknown flips outside the listed erasures and reconstruct erased
+ * bits. For s <= 7 erasures, searches up to floor((7-s)/2) unknown flips;
+ * every pattern with 2*errors+s < 8 is recovered. With s > 7, only a unique
+ * erasure-only completion is attempted. Erased received values are ignored.
+ * result.errors_corrected/positions report unknown flips, not erasures.
+ * CLEAN: no erasures and zero syndrome. CORRECTED: a completion was found.
+ * UNCORRECTABLE: no completion within the search limit, or ambiguous erasures.
+ * INVALID: NULL pointer, invalid bit, duplicate/out-of-range erasure index,
+ * or count > 125. A too-short buffer cannot be detected (see above).
+ * Outputs change only on CLEAN/CORRECTED. Beyond 2*errors+s < 8, a result
+ * may be wrong; an independent integrity check is needed for assurance. */
+p3_result p3_decode_mixed(const uint8_t received[P3_CODE_BITS],
+                          const unsigned *erasures, unsigned count,
+                          uint8_t data_out[P3_DATA_BITS],
+                          uint8_t repaired[P3_CODE_BITS]);
+
 /* Returns the bitwise Hamming distance, or -1 for invalid input bits. */
 int p3_hamming_distance(const uint8_t a[P3_CODE_BITS],
                         const uint8_t b[P3_CODE_BITS]);
